@@ -1,15 +1,76 @@
 # Revised to only have right paddle
 
-class Game():
-    def createGame(self):
-        # Import required library
-        import turtle
+import gym
+from gym import spaces
+import turtle
+import numpy as np
 
+class PongEnv(gym.Env):
+    metadata = {'render.modes': ['human']}
+
+    def __init__(self, render_mode=None):
+        self.width = 1000
+        self.height = 600
+        self.hitPaddle = False
+
+        self.observation_space = spaces.Dict({
+            'paddle': spaces.Box(-self.height/2, self.height/2, shape=(2,)),
+            'ball': spaces.Box(-self.width/2, self.width/2, shape=(2,))
+        })
+
+        self.action_space = spaces.Discrete(2)
+
+        self._action_to_direction = {
+            0: np.array([0, 20]),
+            1: np.array([0, -20]),
+        }
+
+        assert render_mode is None or render_mode in self.metadata["render_modes"]
+        self.render_mode = render_mode
+
+    def _get_obs(self):
+        return {"paddle": self._paddle_location, "ball": self._ball_location}
+
+    def _get_info(self):
+        return {"hitPaddle": self.hitPaddle}
+
+    def reset(self, seed=None, options=None):
+        super().reset(seed=seed)
+
+        observation = self._get_obs()
+        info = self._get_info()
+
+        # Initialize paddle and ball locations in render frame
+        if self.render_mode == "human":
+            self._render_frame()
+
+        return observation, info
+
+    def step(self, action):
+        direction = self._action_to_direction[action]
+        self._paddle_location = np.clip(
+            self._paddle_location + direction, 0, 1)
+
+        terminated = self._ball_location[0] > 500
+        reward = 1 if (360 < self._ball_location[0] < 370) and \
+                     (self._paddle_location[1] + 40 > self._ball_location[1] > self._paddle_location[1] - 40) else 0
+        observation = self._get_obs()
+        info = self._get_info()
+
+        if self.render_mode == "human":
+            self._render_frame()
+
+        return observation, reward, terminated, False, info
+
+    def render(self):
+        return self._render_frame()
+
+    def _render_frame(self):
         # Create screen
         sc = turtle.Screen()
         sc.title("Pong game")
         sc.bgcolor("white")
-        sc.setup(width=1000, height=600)
+        sc.setup(width=self.width, height=self.height)
 
         # Right paddle
         right_pad = turtle.Turtle()
@@ -18,7 +79,8 @@ class Game():
         right_pad.color("black")
         right_pad.shapesize(stretch_wid=6, stretch_len=2)
         right_pad.penup()
-        right_pad.goto(400, 0)
+        self._paddle_location = (400, 0)
+        right_pad.goto(self._paddle_location[0], self._paddle_location[1])
 
         # Ball of circle shape
         hit_ball = turtle.Turtle()
@@ -26,7 +88,8 @@ class Game():
         hit_ball.shape("circle")
         hit_ball.color("blue")
         hit_ball.penup()
-        hit_ball.goto(0, 0)
+        self._ball_location = (0, 0)
+        hit_ball.goto(self._ball_location[0], self._ball_location[1])
         hit_ball.dx = 5
         hit_ball.dy = -5
 
@@ -93,9 +156,7 @@ class Game():
             # Paddle ball collision
             if (hit_ball.xcor() > 360 and hit_ball.xcor() < 370) and (hit_ball.ycor() < right_pad.ycor() + 40 and
                  hit_ball.ycor() > right_pad.ycor() - 40):
+                self.hitPaddle = True
                 hit_ball.setx(360)
                 hit_ball.dx *= -1
-
-    def createEnv(self):
-        self.createGame()
 
