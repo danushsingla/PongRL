@@ -1,6 +1,7 @@
 import gym
 from gym.envs.registration import register
-import PongEnv
+from gym_envs.envs.pong_env import PongEnv
+from stable_baselines3 import PPO
 
 
 if __name__ == '__main__':
@@ -11,9 +12,5 @@ if __name__ == '__main__':
     )
 
     ep_length = 2048 * 8
-    env = SubprocVecEnv([make_env(i, env_config) for i in range(num_cpu)])
+    env = gym.make('PongEnv')
 
-    model = PPO('CnnPolicy', env, verbose=1, n_steps=ep_length, batch_size=512, n_epochs=1, gamma=0.999)
-
-    for i in range(learn_steps):
-        model.learn(total_timesteps=(ep_length) * num_cpu * 1000, callback=checkpoint_callback)
