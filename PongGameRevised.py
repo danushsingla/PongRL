@@ -40,6 +40,12 @@ class PongEnv(gym.Env):
         observation = self._get_obs()
         info = self._get_info()
 
+        self._paddle_location = (400, 0)
+        self._ball_location = (0, 0)
+
+        # Set up the screen
+        self._setup_render_frame()
+
         # Initialize paddle and ball locations in render frame
         if self.render_mode == "human":
             self._render_frame()
@@ -65,98 +71,96 @@ class PongEnv(gym.Env):
     def render(self):
         return self._render_frame()
 
-    def _render_frame(self):
+    def _setup_render_frame(self):
         # Create screen
-        sc = turtle.Screen()
-        sc.title("Pong game")
-        sc.bgcolor("white")
-        sc.setup(width=self.width, height=self.height)
+        self.sc = turtle.Screen()
+        self.sc.title("Pong game")
+        self.sc.bgcolor("white")
+        self.sc.setup(width=self.width, height=self.height)
 
         # Right paddle
-        right_pad = turtle.Turtle()
-        right_pad.speed(0)
-        right_pad.shape("square")
-        right_pad.color("black")
-        right_pad.shapesize(stretch_wid=6, stretch_len=2)
-        right_pad.penup()
-        self._paddle_location = (400, 0)
-        right_pad.goto(self._paddle_location[0], self._paddle_location[1])
+        self.right_pad = turtle.Turtle()
+        self.right_pad.speed(0)
+        self.right_pad.shape("square")
+        self.right_pad.color("black")
+        self.right_pad.shapesize(stretch_wid=6, stretch_len=2)
+        self.right_pad.penup()
+        self.right_pad.goto(self._paddle_location[0], self._paddle_location[1])
 
         # Ball of circle shape
-        hit_ball = turtle.Turtle()
-        hit_ball.speed(40)
-        hit_ball.shape("circle")
-        hit_ball.color("blue")
-        hit_ball.penup()
-        self._ball_location = (0, 0)
-        hit_ball.goto(self._ball_location[0], self._ball_location[1])
-        hit_ball.dx = 5
-        hit_ball.dy = -5
+        self.hit_ball = turtle.Turtle()
+        self.hit_ball.speed(40)
+        self.hit_ball.shape("circle")
+        self.hit_ball.color("blue")
+        self.hit_ball.penup()
+        self.hit_ball.goto(self._ball_location[0], self._ball_location[1])
+        self.hit_ball.dx = 5
+        self.hit_ball.dy = -5
 
         # Initialize the score
-        misses = 0
+        self.misses = 0
 
         # Displays the score
-        sketch = turtle.Turtle()
-        sketch.speed(0)
-        sketch.color("blue")
-        sketch.penup()
-        sketch.hideturtle()
-        sketch.goto(0, 260)
-        sketch.write("Misses: 0",
+        self.sketch = turtle.Turtle()
+        self.sketch.speed(0)
+        self.sketch.color("blue")
+        self.sketch.penup()
+        self.sketch.hideturtle()
+        self.sketch.goto(0, 260)
+        self.sketch.write("Misses: 0",
                      align="center", font=("Courier", 24, "normal"))
 
-
+    def _render_frame(self):
         # Functions to move paddle vertically
         def paddlebup():
-            y = right_pad.ycor()
+            y = self.right_pad.ycor()
             y += 20
-            right_pad.sety(y)
+            self.right_pad.sety(y)
 
 
         def paddlebdown():
-            y = right_pad.ycor()
+            y = self.right_pad.ycor()
             y -= 20
-            right_pad.sety(y)
+            self.right_pad.sety(y)
 
 
         # Keyboard bindings
-        sc.listen()
-        sc.onkeypress(paddlebup, "Up")
-        sc.onkeypress(paddlebdown, "Down")
+        self.sc.listen()
+        self.sc.onkeypress(paddlebup, "Up")
+        self.sc.onkeypress(paddlebdown, "Down")
 
         while True:
-            sc.update()
+            self.sc.update()
 
-            hit_ball.setx(hit_ball.xcor() + hit_ball.dx)
-            hit_ball.sety(hit_ball.ycor() + hit_ball.dy)
+            self.hit_ball.setx(self.hit_ball.xcor() + self.hit_ball.dx)
+            self.hit_ball.sety(self.hit_ball.ycor() + self.hit_ball.dy)
 
             # Checking borders
-            if hit_ball.ycor() > 280:
-                hit_ball.sety(280)
-                hit_ball.dy *= -1
+            if self.hit_ball.ycor() > 280:
+                self.hit_ball.sety(280)
+                self.hit_ball.dy *= -1
 
-            if hit_ball.ycor() < -280:
-                hit_ball.sety(-280)
-                hit_ball.dy *= -1
+            if self.hit_ball.ycor() < -280:
+                self.hit_ball.sety(-280)
+                self.hit_ball.dy *= -1
 
-            if hit_ball.xcor() < -500:
-                hit_ball.setx(-500)
-                hit_ball.dx *= -1
+            if self.hit_ball.xcor() < -500:
+                self.hit_ball.setx(-500)
+                self.hit_ball.dx *= -1
 
-            if hit_ball.xcor() > 500:
-                hit_ball.goto(0, 0)
-                hit_ball.dy *= -1
-                misses += 1
-                sketch.clear()
-                sketch.write("Misses: {}".format(
-                    misses), align="center",
+            if self.hit_ball.xcor() > 500:
+                self.hit_ball.goto(0, 0)
+                self.hit_ball.dy *= -1
+                self.misses += 1
+                self.sketch.clear()
+                self.sketch.write("Misses: {}".format(
+                    self.misses), align="center",
                     font=("Courier", 24, "normal"))
 
             # Paddle ball collision
-            if (hit_ball.xcor() > 360 and hit_ball.xcor() < 370) and (hit_ball.ycor() < right_pad.ycor() + 40 and
-                 hit_ball.ycor() > right_pad.ycor() - 40):
+            if (self.hit_ball.xcor() > 360 and self.hit_ball.xcor() < 370) and (self.hit_ball.ycor() < self.right_pad.ycor() + 40 and
+                 self.hit_ball.ycor() > self.right_pad.ycor() - 40):
                 self.hitPaddle = True
-                hit_ball.setx(360)
-                hit_ball.dx *= -1
+                self.hit_ball.setx(360)
+                self.hit_ball.dx *= -1
 
