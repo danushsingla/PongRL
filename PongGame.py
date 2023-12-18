@@ -1,5 +1,9 @@
 # Import required library
 import turtle
+import gym
+from stable_baselines3 import PPO
+import numpy as np
+import gym_envs
 
 # Create screen
 sc = turtle.Screen()
@@ -77,16 +81,28 @@ def paddlebdown():
 
 # Keyboard bindings
 sc.listen()
-sc.onkeypress(paddleaup, "e")
-sc.onkeypress(paddleadown, "x")
-sc.onkeypress(paddlebup, "Up")
-sc.onkeypress(paddlebdown, "Down")
+sc.onkeypress(paddleaup, "Up")
+sc.onkeypress(paddleadown, "Down")
+
+env = gym.make('gym_envs/PongGame', render_mode='human')
+model = PPO.load("PongGame_model", env=env, verbose=1)
 
 while True:
     sc.update()
 
     hit_ball.setx(hit_ball.xcor() + hit_ball.dx)
     hit_ball.sety(hit_ball.ycor() + hit_ball.dy)
+
+    obs = {"paddle": np.array([right_pad.xcor(), right_pad.ycor()]),
+           "ball": np.array([hit_ball.xcor(), hit_ball.ycor()])}
+    action, state = model.predict(obs)
+
+    if action == 0:
+        paddlebup()
+    elif action == 1:
+        paddlebdown()
+    elif action == 2:
+        pass
 
     # Checking borders
     if hit_ball.ycor() > 280:
@@ -96,6 +112,12 @@ while True:
     if hit_ball.ycor() < -280:
         hit_ball.sety(-280)
         hit_ball.dy *= -1
+
+    if right_pad.ycor() < -230:
+        right_pad.sety(-230)
+
+    if right_pad.ycor() > 230:
+        right_pad.sety(230)
 
     if hit_ball.xcor() > 500:
         hit_ball.goto(0, 0)
@@ -116,12 +138,12 @@ while True:
             font=("Courier", 24, "normal"))
 
     # Paddle ball collision
-    if (hit_ball.xcor() > 360 and hit_ball.xcor() < 370) and (hit_ball.ycor() < right_pad.ycor() + 40 and
-         hit_ball.ycor() > right_pad.ycor() - 40):
-        hit_ball.setx(360)
+    if (hit_ball.xcor() > 355 and hit_ball.xcor() < 375) and (hit_ball.ycor() < right_pad.ycor() + 60 and
+         hit_ball.ycor() > right_pad.ycor() - 60):
+        hit_ball.setx(355)
         hit_ball.dx *= -1
 
-    if (hit_ball.xcor() < -360 and hit_ball.xcor() > -370) and (hit_ball.ycor() < left_pad.ycor() + 40 and
-         hit_ball.ycor() > left_pad.ycor() - 40):
-        hit_ball.setx(-360)
+    if (hit_ball.xcor() < -355 and hit_ball.xcor() > -375) and (hit_ball.ycor() < left_pad.ycor() + 60 and
+         hit_ball.ycor() > left_pad.ycor() - 60):
+        hit_ball.setx(-355)
         hit_ball.dx *= -1
